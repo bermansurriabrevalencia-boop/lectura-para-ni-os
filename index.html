@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aventura de Lectura - Juego Educativo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', cursive, sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            touch-action: manipulation;
+        }
+
+        /* Animaciones personalizadas */
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes pulse-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        @keyframes pop-in {
+            0% { transform: scale(0.7); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: pop-in 0.4s ease-out forwards;
+        }
+
+        .animate-bounce-subtle {
+            animation: bounce-subtle 2s infinite ease-in-out;
+        }
+
+        .shake-error {
+            animation: pulse-shake 0.4s ease-in-out;
+        }
+
+        /* Estilo para los botones principales con efecto 3D estilo juego */
+        .btn-3d {
+            transition: all 0.15s ease;
+            box-shadow: 0px 6px 0px rgba(0, 0, 0, 0.15);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0px 2px 0px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-green { background-color: #4ade80; border-color: #22c55e; color: #064e3b; }
+        .btn-green:hover { background-color: #22c55e; color: #ffffff; }
+
+        .btn-blue { background-color: #38bdf8; border-color: #0284c7; color: #0c4a6e; }
+        .btn-blue:hover { background-color: #0284c7; color: #ffffff; }
+
+        .btn-yellow { background-color: #facc15; border-color: #eab308; color: #713f12; }
+        .btn-yellow:hover { background-color: #eab308; color: #ffffff; }
+
+        .btn-purple { background-color: #c084fc; border-color: #9333ea; color: #3b0764; }
+        .btn-purple:hover { background-color: #9333ea; color: #ffffff; }
+
+        /* Canvas de confeti en capa superior */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 sm:p-6 text-slate-800">
+
+    <!-- Canvas para los confetis de victoria -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- ENCABEZADO Y BARRA DE ESTADO -->
+    <header class="w-full max-w-4xl mx-auto bg-white/90 backdrop-blur-md rounded-3xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-3 mb-4">
+        <!-- Logo / Título -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showMainMenu()">
+            <span class="text-4xl animate-bounce-subtle">📖</span>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                    Aventura de Lectura
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-500 font-semibold">¡Aprende a leer jugando!</p>
+            </div>
+        </div>
+
+        <!-- Puntuación y Progreso -->
+        <div class="flex items-center space-x-4">
+            <!-- Estrellas acumuladas -->
+            <div class="flex items-center bg-yellow-100 border-2 border-yellow-300 px-3 py-1.5 rounded-2xl shadow-inner">
+                <span class="text-2xl mr-1">⭐</span>
+                <span id="star-count" class="text-xl font-bold text-yellow-700">0</span>
+            </div>
+
+            <!-- Botón Volver al Menú -->
+            <button onclick="showMainMenu()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 p-2.5 rounded-2xl font-bold text-sm transition flex items-center">
+                🏠 Inicio
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main class="w-full max-w-4xl mx-auto flex-1 flex flex-col justify-center">
+
+        <!-- MENÚ PRINCIPAL -->
+        <div id="main-menu" class="bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl text-center space-y-6 animate-pop">
+            <div class="space-y-2">
+                <h2 class="text-2xl sm:text-4xl font-bold text-purple-700">¡Hola, Pequeño Lector! 👋</h2>
+                <p class="text-lg text-slate-600">Elige tu juego favorito para empezar la diversión:</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Modo 1 -->
+                <button onclick="startGame(1)" class="btn-3d btn-green rounded-3xl p-6 flex flex-col items-center justify-center space-y-3 border-b-4 hover:scale-105 transition">
+                    <span class="text-6xl">🔍</span>
+                    <h3 class="text-xl font-bold">¿Qué Palabra Es?</h3>
+                    <p class="text-xs opacity-90">Lee la palabra y encuentra la imagen correcta.</p>
+                </button>
+
+                <!-- Modo 2 -->
+                <button onclick="startGame(2)" class="btn-3d btn-blue rounded-3xl p-6 flex flex-col items-center justify-center space-y-3 border-b-4 hover:scale-105 transition">
+                    <span class="text-6xl">🧩</span>
+                    <h3 class="text-xl font-bold">Sílaba Faltante</h3>
+                    <p class="text-xs opacity-90">Completa la palabra con la sílaba correcta.</p>
+                </button>
+
+                <!-- Modo 3 -->
+                <button onclick="startGame(3)" class="btn-3d btn-purple rounded-3xl p-6 flex flex-col items-center justify-center space-y-3 border-b-4 hover:scale-105 transition">
+                    <span class="text-6xl">🔤</span>
+                    <h3 class="text-xl font-bold">Ordena las Sílabas</h3>
+                    <p class="text-xs opacity-90">Junta las sílabas desordenadas para formar la palabra.</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- ÁREA DE JUEGO (Oculta por defecto) -->
+        <div id="game-area" class="hidden bg-white/95 backdrop-blur-md rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col justify-between min-h-[460px] animate-pop relative">
+            
+            <!-- Barra de Progreso del Nivel -->
+            <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden mb-4 border border-slate-200">
+                <div id="progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-full w-0 transition-all duration-500"></div>
+            </div>
+
+            <!-- Pista / Pregunta de Voz -->
+            <div class="flex items-center justify-between bg-sky-50 border-2 border-sky-200 rounded-2xl p-3 sm:p-4 mb-4">
+                <div class="flex items-center space-x-3">
+                    <button id="btn-speak-question" onclick="speakCurrentQuestion()" class="bg-sky-500 hover:bg-sky-600 text-white p-3 rounded-full shadow-md transition transform active:scale-95 flex-shrink-0" title="Escuchar instrucción">
+                        <span class="text-2xl sm:text-3xl">🔊</span>
+                    </button>
+                    <h2 id="game-instruction" class="text-lg sm:text-2xl font-bold text-sky-900">
+                        Instrucción del juego...
+                    </h2>
+                </div>
+                <!-- Pista Sutil -->
+                <button id="btn-hint" onclick="showHint()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs sm:text-sm px-3 py-2 rounded-xl font-bold border border-amber-300 transition">
+                    💡 Pista
+                </button>
+            </div>
+
+            <!-- CONTENIDO ESPECÍFICO DEL MODO -->
+            <div id="mode-container" class="flex-1 flex flex-col items-center justify-center py-4">
+                <!-- Se llena dinámicamente según el modo -->
+            </div>
+
+            <!-- FEEDBACK / MENSAJE DE PISTA -->
+            <div id="feedback-msg" class="h-10 text-center font-bold text-lg sm:text-xl transition-all duration-300 flex items-center justify-center">
+                <!-- Texto de felicitación o aliento -->
+            </div>
+        </div>
+
+        <!-- PANTALLA DE RESULTADOS / FELICITACIONES -->
+        <div id="victory-screen" class="hidden bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl text-center space-y-6 animate-pop">
+            <span class="text-8xl block animate-bounce-subtle">🏆</span>
+            <h2 class="text-3xl sm:text-5xl font-bold text-emerald-600">¡Excelente Trabajo!</h2>
+            <p class="text-xl text-slate-600">¡Has completado el reto de lectura con éxito!</p>
+
+            <div class="bg-yellow-50 border-2 border-yellow-200 rounded-3xl p-6 max-w-sm mx-auto shadow-inner space-y-2">
+                <p class="text-lg text-yellow-800 font-semibold">Ganaste:</p>
+                <div class="flex justify-center items-center space-x-2 text-4xl">
+                    <span>⭐</span>
+                    <span id="stars-earned" class="font-bold text-yellow-600">5</span>
+                    <span>Estrellas</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                <button onclick="restartCurrentGame()" class="btn-3d btn-green text-lg font-bold px-8 py-4 rounded-2xl border-b-4">
+                    🔄 Jugar de nuevo
+                </button>
+                <button onclick="showMainMenu()" class="btn-3d btn-blue text-lg font-bold px-8 py-4 rounded-2xl border-b-4">
+                    🏠 Menú Principal
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="w-full max-w-4xl mx-auto text-center mt-6 text-slate-600 text-xs sm:text-sm font-semibold">
+        Diseñado para la práctica de lectura en niños de 7 años • Sílabas compuestas, trabadas y ortografía.
+    </footer>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        /* ==========================================================================
+           DATOS DEL JUEGO (Vocabulario adaptado para niños de 7 años)
+           Incluye trabadas (tr, cl, pr, pl, dr) y ortografía (c/z, g/j, b/v)
+           ========================================================================== */
+        const gameData = [
+            // Trabadas TR / CL / PR / PL / DR
+            { word: "TIGRE", emoji: "🐯", mode1_options: ["🐯", "🦁", "🐱", "🐶"], missing: "TRE", options: ["TRE", "TRA", "TER", "TRI"], syllables: ["TI", "GRE"], hint: "Es un felino salvaje con rayas naranjas y negras." },
+            { word: "ESTRELLA", emoji: "⭐", mode1_options: ["⭐", "🌙", "☀️", "☁️"], missing: "TRE", options: ["TRE", "TER", "TE", "TLE"], syllables: ["ES", "TRE", "LLA"], hint: "Brilla en el cielo por la noche." },
+            { word: "DRAGÓN", emoji: "🐉", mode1_options: ["🐉", "🐊", "DINO", "🦎"], missing: "DRA", options: ["DRA", "DAR", "DA", "DLA"], syllables: ["DRA", "GÓN"], hint: "Personaje de cuento que echa fuego." },
+            { word: "PLÁTANO", emoji: "🍌", mode1_options: ["🍌", "🍎", "🍊", "🍇"], missing: "PLÁ", options: ["PLÁ", "PAL", "PA", "PLA"], syllables: ["PLÁ", "TA", "NO"], hint: "Fruta amarilla preferida por los monos." },
+            { word: "CLAVO", emoji: "🔩", mode1_options: ["🔩", "🔨", "🔑", "✂️"], missing: "CLA", options: ["CLA", "CAL", "CA", "CRA"], syllables: ["CLA", "VO"], hint: "Se clava en la pared usando un martillo." },
+            { word: "TRACTOR", emoji: "🚜", mode1_options: ["🚜", "🚗", "🚌", "✈️"], missing: "TRA", options: ["TRA", "TAR", "TA", "TLA"], syllables: ["TRAC", "TOR"], hint: "Vehículo grande que se usa en el campo." },
+            { word: "PRADO", emoji: "🏞️", mode1_options: ["🏞️", "🏖️", "🏜️", "🌋"], missing: "PRA", options: ["PRA", "PAR", "PA", "PRO"], syllables: ["PRA", "DO"], hint: "Lugar lleno de hierba verde y flores." },
+            { word: "BICICLETA", emoji: "🚲", mode1_options: ["🚲", "🛵", "🚗", "🛹"], missing: "CLE", options: ["CLE", "CEL", "KE", "CUE"], syllables: ["BI", "CI", "CLE", "TA"], hint: "Tiene dos ruedas y pedales." },
+            
+            // Combinaciones C/Z, G/J, B/V y cotidianas
+            { word: "CONEJO", emoji: "🐰", mode1_options: ["🐰", "🐹", "🦊", "🐻"], missing: "JO", options: ["JO", "GO", "HO", "YO"], syllables: ["CO", "NE", "JO"], hint: "Animalito de orejas largas que come zanahorias." },
+            { word: "ZAPATO", emoji: "👟", mode1_options: ["👟", "🧦", "👕", "🧢"], missing: "ZA", options: ["ZA", "CA", "SA", "FA"], syllables: ["ZA", "PA", "TO"], hint: "Nos lo ponemos en los pies para caminar." },
+            { word: "GIRASOL", emoji: "🌻", mode1_options: ["🌻", "🌹", "🌷", "🌴"], missing: "GI", options: ["GI", "JI", "GU", "GUI"], syllables: ["GI", "RA", "SOL"], hint: "Flor amarilla que mira al sol." },
+            { word: "VACA", emoji: "🐮", mode1_options: ["🐮", "🐷", "🐴", "🐑"], missing: "VA", options: ["VA", "BA", "FA", "MA"], syllables: ["VA", "CA"], hint: "Animal del campo que nos da leche rica." },
+            { word: "BARCO", emoji: "⛵", mode1_options: ["⛵", "🚀", "🚗", "🛸"], missing: "BAR", options: ["BAR", "VAR", "BRA", "VRA"], syllables: ["BAR", "CO"], hint: "Navega por el agua del mar." },
+            { word: "CEREZA", emoji: "🍒", mode1_options: ["🍒", "🍓", "🍎", "🍉"], missing: "CE", options: ["CE", "ZE", "SE", "CHE"], syllables: ["CE", "RE", "ZA"], hint: "Fruta roja muy pequeña y sabrosa." }
+        ];
+
+        /* ==========================================================================
+           ESTADO GLOBAL DEL JUEGO
+           ========================================================================== */
+        let currentMode = 1;
+        let currentQuestionIndex = 0;
+        let totalStars = 0;
+        let selectedQuestions = [];
+        let orderedSyllablesUser = [];
+
+        /* ==========================================================================
+           AUDIO Y SÍNTESIS DE VOZ (SpeechSynthesis & Web Audio API)
+           ========================================================================== */
+        
+        // Función para leer textos usando la API nativa de voz
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                // Cancelar lecturas previas
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES'; // Configurar en Español
+                utterance.rate = 0.85;     // Velocidad ligeramente adaptada para niños
+                utterance.pitch = 1.1;     // Tono amigable
+
+                // Buscar una voz en español disponible
+                const voices = window.speechSynthesis.getVoices();
+                const esVoice = voices.find(v => v.lang.startsWith('es'));
+                if (esVoice) utterance.voice = esVoice;
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Generador de efectos de sonido con Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                // Sonido alegre de acierto (Arpegio ascendente)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'wrong') {
+                // Sonido suave de error (sin frustración)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(180, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                // Fanfarria de victoria
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.15);
+                osc.frequency.setValueAtTime(659.25, now + 0.3);
+                osc.frequency.setValueAtTime(880, now + 0.45);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            }
+        }
+
+        /* ==========================================================================
+           GESTIÓN DE PANTALLAS Y FLUJO DEL JUEGO
+           ========================================================================== */
+
+        function showMainMenu() {
+            document.getElementById('main-menu').classList.remove('hidden');
+            document.getElementById('game-area').classList.add('hidden');
+            document.getElementById('victory-screen').classList.add('hidden');
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }
+
+        function startGame(mode) {
+            currentMode = mode;
+            currentQuestionIndex = 0;
+            // Mezclar preguntas aleatoriamente y seleccionar 5 para la ronda
+            selectedQuestions = [...gameData].sort(() => 0.5 - Math.random()).slice(0, 5);
+
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('victory-screen').classList.add('hidden');
+            document.getElementById('game-area').classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        function restartCurrentGame() {
+            startGame(currentMode);
+        }
+
+        function loadQuestion() {
+            // Actualizar Barra de Progreso
+            const progress = (currentQuestionIndex / selectedQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('feedback-msg').textContent = '';
+
+            const currentData = selectedQuestions[currentQuestionIndex];
+            const container = document.getElementById('mode-container');
+            container.innerHTML = ''; // Limpiar contenedor
+
+            // Cargar según el modo seleccionado
+            if (currentMode === 1) {
+                setupMode1(currentData, container);
+            } else if (currentMode === 2) {
+                setupMode2(currentData, container);
+            } else if (currentMode === 3) {
+                setupMode3(currentData, container);
+            }
+        }
+
+        function speakCurrentQuestion() {
+            const currentData = selectedQuestions[currentQuestionIndex];
+            if (currentMode === 1) {
+                speakText(`Busca la imagen que corresponde a la palabra: ${currentData.word}`);
+            } else if (currentMode === 2) {
+                speakText(`¿Qué sílaba falta para completar la palabra ${currentData.word}?`);
+            } else if (currentMode === 3) {
+                speakText(`Ordena las sílabas para formar la palabra: ${currentData.word}`);
+            }
+        }
+
+        function showHint() {
+            const currentData = selectedQuestions[currentQuestionIndex];
+            const feedback = document.getElementById('feedback-msg');
+            feedback.className = "h-10 text-center font-bold text-lg sm:text-xl text-amber-600 animate-pop";
+            feedback.textContent = `💡 Pista: ${currentData.hint}`;
+            speakText(`Pista: ${currentData.hint}`);
+        }
+
+        /* ==========================================================================
+           MODO 1: ASOCIACIÓN PALABRA -> IMAGEN
+           ========================================================================== */
+
+        function setupMode1(data, container) {
+            document.getElementById('game-instruction').textContent = `¿Qué imagen representa la palabra?`;
+
+            // Mostrar la palabra en texto gigante
+            const wordDisplay = document.createElement('div');
+            wordDisplay.className = 'flex items-center space-x-3 mb-6 bg-amber-50 px-6 py-4 rounded-3xl border-4 border-amber-300 shadow-md';
+            wordDisplay.innerHTML = `
+                <span class="text-4xl sm:text-6xl font-extrabold tracking-wide text-slate-800">${data.word}</span>
+                <button onclick="speakText('${data.word}')" class="text-2xl sm:text-3xl bg-amber-400 hover:bg-amber-500 text-amber-950 p-2 rounded-2xl transition">🔊</button>
+            `;
+            container.appendChild(wordDisplay);
+
+            // Rejilla de Opciones con Emojis Gigantes
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-md';
+
+            // Mezclar opciones
+            const options = [...data.mode1_options].sort(() => 0.5 - Math.random());
+
+            options.forEach(emojiOpt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-3d bg-white hover:bg-slate-50 border-4 border-slate-200 text-6xl sm:text-7xl p-6 rounded-3xl flex items-center justify-center transition transform active:scale-95';
+                btn.textContent = emojiOpt;
+                btn.onclick = () => checkAnswerMode1(emojiOpt, data.emoji, btn);
+                grid.appendChild(btn);
+            });
+
+            container.appendChild(grid);
+            speakCurrentQuestion();
+        }
+
+        function checkAnswerMode1(selectedEmoji, correctEmoji, btnElement) {
+            if (selectedEmoji === correctEmoji) {
+                handleSuccess(btnElement);
+            } else {
+                handleError(btnElement);
+            }
+        }
+
+        /* ==========================================================================
+           MODO 2: SÍLABA O LETRA FALTANTE
+           ========================================================================== */
+
+        function setupMode2(data, container) {
+            document.getElementById('game-instruction').textContent = `Completa la sílaba o letra que falta:`;
+
+            // Construir representación visual de la palabra con espacio en blanco
+            const wordDisplay = document.createElement('div');
+            wordDisplay.className = 'flex flex-wrap items-center justify-center gap-2 mb-6 bg-indigo-50 px-6 py-5 rounded-3xl border-4 border-indigo-200 shadow-md';
+
+            // Reemplazar la sílaba faltante con un hueco destacado
+            const wordWithBlank = data.word.replace(data.missing, " ____ ");
+
+            wordDisplay.innerHTML = `
+                <span class="text-5xl sm:text-6xl mr-2">${data.emoji}</span>
+                <span class="text-3xl sm:text-5xl font-extrabold text-indigo-950 tracking-wider">${wordWithBlank}</span>
+            `;
+            container.appendChild(wordDisplay);
+
+            // Opciones de sílabas
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full max-w-lg';
+
+            const options = [...data.options].sort(() => 0.5 - Math.random());
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-3d btn-blue text-2xl sm:text-3xl font-bold py-4 px-6 rounded-2xl border-b-4 transition flex items-center justify-center space-x-2';
+                btn.innerHTML = `<span>${opt}</span>`;
+                
+                btn.onclick = () => {
+                    speakText(opt);
+                    if (opt === data.missing) {
+                        handleSuccess(btn);
+                    } else {
+                        handleError(btn);
+                    }
+                };
+                grid.appendChild(btn);
+            });
+
+            container.appendChild(grid);
+            speakCurrentQuestion();
+        }
+
+        /* ==========================================================================
+           MODO 3: ORDENAR LAS SÍLABAS
+           ========================================================================== */
+
+        function setupMode3(data, container) {
+            document.getElementById('game-instruction').textContent = `Toca las sílabas en orden para formar la palabra:`;
+            orderedSyllablesUser = [];
+
+            // Contenedor del pictograma
+            const emojiDisplay = document.createElement('div');
+            emojiDisplay.className = 'text-6xl sm:text-7xl mb-3';
+            emojiDisplay.textContent = data.emoji;
+            container.appendChild(emojiDisplay);
+
+            // Zona donde se colocan las sílabas seleccionadas por el niño
+            const answerZone = document.createElement('div');
+            answerZone.id = 'answer-zone';
+            answerZone.className = 'flex flex-wrap items-center justify-center gap-3 min-h-[70px] w-full max-w-md bg-amber-50 border-4 border-dashed border-amber-300 rounded-2xl p-3 mb-6';
+            container.appendChild(answerZone);
+
+            // Sílabas disponibles (desordenadas)
+            const syllablesZone = document.createElement('div');
+            syllablesZone.id = 'syllables-zone';
+            syllablesZone.className = 'flex flex-wrap items-center justify-center gap-3 w-full max-w-md';
+
+            // Copia desordenada de las sílabas
+            const shuffledSyllables = [...data.syllables].sort(() => 0.5 - Math.random());
+
+            shuffledSyllables.forEach((syl, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-3d btn-yellow text-2xl sm:text-3xl font-bold px-5 py-3 rounded-2xl border-b-4 transition transform active:scale-95';
+                btn.textContent = syl;
+                btn.dataset.index = idx;
+                
+                btn.onclick = () => {
+                    speakText(syl);
+                    // Mover botón a la zona de respuesta
+                    answerZone.appendChild(btn);
+                    orderedSyllablesUser.push(syl);
+
+                    // Verificar si ya se colocaron todas las sílabas
+                    if (orderedSyllablesUser.length === data.syllables.length) {
+                        const formedWord = orderedSyllablesUser.join('');
+                        if (formedWord === data.word) {
+                            handleSuccess(answerZone);
+                        } else {
+                            handleError(answerZone);
+                            // Regresar sílabas tras un momento si es incorrecto
+                            setTimeout(() => {
+                                orderedSyllablesUser = [];
+                                const buttons = Array.from(answerZone.children);
+                                buttons.forEach(b => syllablesZone.appendChild(b));
+                            }, 800);
+                        }
+                    }
+                };
+                syllablesZone.appendChild(btn);
+            });
+
+            container.appendChild(syllablesZone);
+            speakCurrentQuestion();
+        }
+
+        /* ==========================================================================
+           RETROALIMENTACIÓN Y RECOMPENSAS
+           ========================================================================== */
+
+        function handleSuccess(element) {
+            playSound('correct');
+            triggerConfetti();
+
+            // Incrementar estrellas
+            totalStars += 1;
+            document.getElementById('star-count').textContent = totalStars;
+
+            // Feedback visual positivo
+            const feedback = document.getElementById('feedback-msg');
+            feedback.className = "h-10 text-center font-bold text-xl sm:text-2xl text-emerald-600 animate-pop";
+            const mensajes = ["¡Excelente! 🌟", "¡Muy bien hecho! 👏", "¡Eres Genial! 🚀", "¡Correcto! 🎉"];
+            const randomMsg = mensajes[Math.floor(Math.random() * mensajes.length)];
+            feedback.textContent = randomMsg;
+
+            const currentData = selectedQuestions[currentQuestionIndex];
+            speakText(`${randomMsg} Es la palabra ${currentData.word}`);
+
+            // Avanzar a la siguiente pregunta tras breve pausa
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < selectedQuestions.length) {
+                    loadQuestion();
+                } else {
+                    finishGame();
+                }
+            }, 1800);
+        }
+
+        function handleError(element) {
+            playSound('wrong');
+
+            // Feedback amable sin frustración
+            const feedback = document.getElementById('feedback-msg');
+            feedback.className = "h-10 text-center font-bold text-lg sm:text-xl text-amber-600 animate-pop";
+            feedback.textContent = "¡Casi lo logras! Inténtalo otra vez 💪";
+            speakText("¡Casi! Inténtalo otra vez");
+
+            // Animación de sacudida leve
+            element.classList.add('shake-error');
+            setTimeout(() => element.classList.remove('shake-error'), 500);
+        }
+
+        function finishGame() {
+            playSound('win');
+            triggerConfetti();
+            document.getElementById('game-area').classList.add('hidden');
+            document.getElementById('victory-screen').classList.remove('hidden');
+
+            document.getElementById('stars-earned').textContent = selectedQuestions.length;
+            speakText("¡Felicidades! Has completado todos los ejercicios del nivel.");
+        }
+
+        /* ==========================================================================
+           SISTEMA DE CONFETI EN CANVAS NATIVO
+           ========================================================================== */
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerConfetti() {
+            particles = [];
+            const colors = ['#f43f5e', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
+            
+            for (let i = 0; i < 70; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    rx: (Math.random() - 0.5) * 12,
+                    ry: (Math.random() - 0.7) * 14,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 8 + 4,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: (Math.random() - 0.5) * 10
+                });
+            }
+            animateConfetti();
+        }
+
+        let animationFrameId = null;
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach((p, index) => {
+                p.x += p.rx;
+                p.y += p.ry;
+                p.ry += 0.25; // Gravedad
+                p.rotation += p.rotationSpeed;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+
+                // Eliminar partículas fuera de pantalla
+                if (p.y > canvas.height) {
+                    particles.splice(index, 1);
+                }
+            });
+
+            if (particles.length > 0) {
+                animationFrameId = requestAnimationFrame(animateConfetti);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                cancelAnimationFrame(animationFrameId);
+            }
+        }
+    </script>
+</body>
+</html>
